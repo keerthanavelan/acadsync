@@ -1,0 +1,30 @@
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: academicflow
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-academicflow}
+      POSTGRES_DB: academicflow
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U academicflow"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+  backend:
+    build: ./backend
+    env_file: .env
+    depends_on:
+      db:
+        condition: service_healthy
+    expose: ["8000"]
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        API_INTERNAL_URL: http://backend:8000
+    ports: ["3000:3000"]
+    depends_on: [backend]
+volumes:
+  postgres_data:
